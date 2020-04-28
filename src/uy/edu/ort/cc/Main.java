@@ -7,5 +7,6 @@ public class Main {
         ArduinoSketch anExampleScketch = new ArduinoSketch();
         anExampleScketch.setUp();
         anExampleScketch.loop();
+        System.exit(0);
     }
 }
