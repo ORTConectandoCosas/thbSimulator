@@ -78,7 +78,7 @@ public class ArduinoSketch{
                 //System.out.println("Publish to server" + jsonString);
 
                 // simulate a delay()
-                TimeUnit.MILLISECONDS.sleep(6000);
+                TimeUnit.MILLISECONDS.sleep(2000);
 
             } catch (MqttException e) {
                 System.out.println("Mqtt exception" + e.getMessage());

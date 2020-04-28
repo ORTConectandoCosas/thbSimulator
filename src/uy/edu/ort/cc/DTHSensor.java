@@ -6,7 +6,7 @@ public class DTHSensor{
 
     public float readHumidity(){
         Random r = new Random();
-        float low = 0;
+        float low = 40;
         float high = 100;
         float result = low + r.nextFloat() * (high - low);
         return result;
