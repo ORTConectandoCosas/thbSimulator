@@ -11,8 +11,12 @@ public class ArduinoSketch{
      */
     private String thbServer = "tcp://demo.thingsboard.io:1883";
     private String publishTopic = "v1/devices/me/telemetry";
+    private String requestTopic = "v1/devices/me/rpc/request/+";
+
     private String clientId = "ASIMLATOR";
     private String deviceToken = "30Y3Hf2lC3N43UqWusNC";
+
+    //mqtt connection parameters
     private MemoryPersistence persistence = new MemoryPersistence();
     private MqttConnectOptions connectOptions = new MqttConnectOptions();
     private MqttClient thbMqttClient = null;
@@ -22,21 +26,32 @@ public class ArduinoSketch{
      */
 
     private DTHSensor temperatureSensor = new DTHSensor();
+    private ServoMotor servo = new ServoMotor();
+
 
     // Arduino Setup
-
     public void setUp() {
 
-        //Connect to Thingsboar server
+        //Connect to Thingsboard server
         connectOptions.setUserName(deviceToken);
         connectOptions.setMaxInflight(200);
         try {
+            // create Mattclient
             thbMqttClient = new MqttClient(thbServer, clientId, persistence);
             connectOptions.setMaxInflight(200);
+
             //connectOptions.setCleanSession(true);
             thbMqttClient.connect(connectOptions);
 
+            //suscribe to receive commands
+            thbMqttClient.subscribe(requestTopic);
+
+            // Register callback to call when a command arrives using requestTopic
+            thbMqttClient.setCallback(on_message);
+
+
             System.out.println("Connecting to server");
+
         } catch (MqttException e) {
             System.out.println("Mqtt exception" + e.getMessage());
         }
@@ -60,7 +75,7 @@ public class ArduinoSketch{
                 MqttMessage msg = new MqttMessage(jsonString.getBytes());
                 msg.setQos(0);
                 thbMqttClient.publish(publishTopic, msg);
-                System.out.println("Publish to server" + jsonString);
+                //System.out.println("Publish to server" + jsonString);
 
                 // simulate a delay()
                 TimeUnit.MILLISECONDS.sleep(6000);
@@ -75,5 +90,34 @@ public class ArduinoSketch{
         }
 
     }
+
+    /*
+        Callback to process commands sent from thingsboard server
+     */
+    MqttCallback on_message = new MqttCallback(){
+        @Override
+        public void connectionLost(Throwable throwable) {
+
+        }
+
+        @Override
+        public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
+            JsonParser parser = new JsonParser();
+            String message = mqttMessage.toString();
+
+            JsonElement jsonMessage = parser.parse(message);
+            JsonObject jsonObject = jsonMessage.getAsJsonObject();
+            JsonElement methodValue = jsonObject.get("method");
+            JsonElement paramsValue = jsonObject.get("params");
+
+            servo.write(paramsValue.getAsFloat());
+
+        }
+
+        @Override
+        public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+
+        }
+    };
 
 }
