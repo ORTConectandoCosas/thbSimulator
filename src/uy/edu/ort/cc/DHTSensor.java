@@ -2,7 +2,7 @@ package uy.edu.ort.cc;
 
 import java.util.Random;
 
-public class DTHSensor{
+public class DHTSensor{
 
     public float readHumidity(){
         Random r = new Random();

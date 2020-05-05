@@ -10,7 +10,7 @@ public class ArduinoSketch{
        ThingsBoard parameters for MQTT
      */
     private String thbServer = "tcp://demo.thingsboard.io:1883";
-    private String publishTopic = "v1/devices/me/telemetry";
+    private String telemetryTopic = "v1/devices/me/telemetry";
     private String requestTopic = "v1/devices/me/rpc/request/+";
 
     private String clientId = "ASIMLATOR";
@@ -25,7 +25,7 @@ public class ArduinoSketch{
         Sensor declaration
      */
 
-    private DTHSensor temperatureSensor = new DTHSensor();
+    private DHTSensor temperatureSensor = new DHTSensor();
     private ServoMotor servo = new ServoMotor();
 
 
@@ -35,6 +35,7 @@ public class ArduinoSketch{
         //Connect to Thingsboard server
         connectOptions.setUserName(deviceToken);
         connectOptions.setMaxInflight(200);
+
         try {
             // create Mattclient
             thbMqttClient = new MqttClient(thbServer, clientId, persistence);
@@ -70,22 +71,21 @@ public class ArduinoSketch{
 
                 //Build json
                 String jsonString = "{\"temperature\" :" + Float.toString(temperatureRead) + "," + "\"humidity\":" + Float.toString(humidityRead) + "}";
+                System.out.println("=>Telemetria enviada: " + jsonString);
 
                 //publish to telemetry topic
                 MqttMessage msg = new MqttMessage(jsonString.getBytes());
                 msg.setQos(0);
-                thbMqttClient.publish(publishTopic, msg);
-                //System.out.println("Publish to server" + jsonString);
+                thbMqttClient.publish(telemetryTopic, msg);
+
 
                 // simulate a delay()
                 TimeUnit.MILLISECONDS.sleep(2000);
 
             } catch (MqttException e) {
                 System.out.println("Mqtt exception" + e.getMessage());
-
-            }
-            catch (InterruptedException e) {
-                System.out.println("Interrupt exception" + e.getMessage());
+            } catch (InterruptedException e) {
+                System.out.println("Timer exception" + e.getMessage());
             }
         }
 
@@ -109,6 +109,10 @@ public class ArduinoSketch{
             JsonObject jsonObject = jsonMessage.getAsJsonObject();
             JsonElement methodValue = jsonObject.get("method");
             JsonElement paramsValue = jsonObject.get("params");
+
+            System.out.println("<= Payload recibido: " + jsonMessage.toString());
+            System.out.println("<= Comando: " + methodValue.toString());
+            System.out.println("<= Parametros comnado: " + paramsValue.toString());
 
             servo.write(paramsValue.getAsFloat());
 
