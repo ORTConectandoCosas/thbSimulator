@@ -93,3 +93,8 @@ fabric.properties
 # End of https://www.gitignore.io/api/intellij
 /Diagramas/thbSimulator.asta
 /Diagramas/thbSimulator.asta.lock
+META-INF/
+MANIFEST.MF
+artifacts/
+artifacts/
+ThingsBoardSimulator_jar.xml
