@@ -13,8 +13,14 @@ public class ArduinoSketch{
     private String telemetryTopic = "v1/devices/me/telemetry";
     private String requestTopic = "v1/devices/me/rpc/request/+";
 
-    private String clientId = "ASIMLATOR";
-    private String deviceToken = "30Y3Hf2lC3N43UqWusNC";
+    // New topics. Response used to send responses to request from server
+    // attributes used to receive shared or client attributes form server
+    private String responseTopic = "v1/devices/me/rpc/response/+"; // RPC responce
+    private String attributesTopic = "v1/devices/me/attributes";  // Attributes
+
+
+    private String clientId = "fe339e70-8fc0-11ea-beda-b3e525f9fbf0";
+    private String deviceToken = "YtJVYrXCWXJsCrfTbN5l";
 
     //mqtt connection parameters
     private MemoryPersistence persistence = new MemoryPersistence();
@@ -28,6 +34,10 @@ public class ArduinoSketch{
     private DHTSensor temperatureSensor = new DHTSensor();
     private ServoMotor servo = new ServoMotor();
 
+    /*
+    sleep value to simulate delay(sleepValue)
+     */
+    private int delayValue = 6000;
 
     // Arduino Setup
     public void setUp() {
@@ -44,8 +54,11 @@ public class ArduinoSketch{
             //connectOptions.setCleanSession(true);
             thbMqttClient.connect(connectOptions);
 
-            //suscribe to receive commands
-            thbMqttClient.subscribe(requestTopic);
+            //suscribe to receive commands mqttAsyncClient.subscribe(["/topic1", "/topic2", "/topic3"], [0,1,2]);
+            thbMqttClient.subscribe(requestTopic, 0);
+
+            //suscribe to attribuites topic
+            thbMqttClient.subscribe(attributesTopic,0);
 
             // Register callback to call when a command arrives using requestTopic
             thbMqttClient.setCallback(on_message);
@@ -80,7 +93,7 @@ public class ArduinoSketch{
 
 
                 // simulate a delay()
-                TimeUnit.MILLISECONDS.sleep(2000);
+                TimeUnit.MILLISECONDS.sleep(delayValue);
 
             } catch (MqttException e) {
                 System.out.println("Mqtt exception" + e.getMessage());
@@ -90,6 +103,8 @@ public class ArduinoSketch{
         }
 
     }
+
+
 
     /*
         Callback to process commands sent from thingsboard server
@@ -101,20 +116,19 @@ public class ArduinoSketch{
         }
 
         @Override
-        public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-            JsonParser parser = new JsonParser();
+        public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
             String message = mqttMessage.toString();
+            // Check the topic to take action
+            if (topic.contains(attributesTopic) == true) {
+                // process attributes
+                System.out.println("<= Payload Atributos: " + message);
+                processAttributes(message);
 
-            JsonElement jsonMessage = parser.parse(message);
-            JsonObject jsonObject = jsonMessage.getAsJsonObject();
-            JsonElement methodValue = jsonObject.get("method");
-            JsonElement paramsValue = jsonObject.get("params");
-
-            System.out.println("<= Payload recibido: " + jsonMessage.toString());
-            System.out.println("<= Comando: " + methodValue.toString());
-            System.out.println("<= Parametros comnado: " + paramsValue.toString());
-
-            servo.write(paramsValue.getAsFloat());
+            } else if (topic.contains(requestTopic.substring(0,26)) == true) {
+                processRequest(message);
+            } else {
+                System.out.println("ERROR: message for another topic");
+            }
 
         }
 
@@ -123,5 +137,43 @@ public class ArduinoSketch{
 
         }
     };
+
+    private void processRequest(String message) {
+        // this method it is used to process any request method from server
+        JsonParser parser = new JsonParser();
+        JsonElement jsonMessage = parser.parse(message);
+        JsonObject jsonObject = jsonMessage.getAsJsonObject();
+        JsonElement methodValue = jsonObject.get("method");
+        JsonElement paramsValue = jsonObject.get("params");
+
+        // {"method": valor, "params": valor}
+
+        System.out.println("<= Payload recibido: " + jsonMessage.toString());
+        System.out.println("<= Comando: " + methodValue.toString());
+        System.out.println("<= Parametros comnado: " + paramsValue.toString());
+
+        if(methodValue.equals("setValue"))
+                servo.write(paramsValue.getAsFloat());
+
+    }
+
+    private void processAttributes(String message) {
+        // this method it is used to process any request method from server
+        JsonParser parser = new JsonParser();
+        JsonElement jsonMessage = parser.parse(message);
+        JsonObject jsonObject = jsonMessage.getAsJsonObject();
+        JsonElement attributeValue = jsonObject.get("delayValue");
+
+
+        // {"attribute": valor}
+
+        System.out.println("<= Payload recibido: " + jsonMessage.toString());
+        System.out.println("<= Attribute delayValue: " + attributeValue.toString());
+        delayValue = attributeValue.getAsInt();
+
+        //do whatever you want with the attribute, for the exmaple using delayValue to change loop frecuency
+
+
+    }
 
 }

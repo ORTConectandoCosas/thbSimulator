@@ -14,8 +14,8 @@ public class DHTSensor{
 
     public float readTemperature(){
         Random r = new Random();
-        float low = 10;
-        float high = 40;
+        float low = 0;
+        float high = 90;
         float result = low + r.nextFloat() * (high - low);
         return result;
     }
